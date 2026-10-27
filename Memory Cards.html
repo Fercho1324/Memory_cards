@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memoria química</title>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#172033}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(135deg,#fff7ed,#eff6ff);transition:background .3s}
+body.team-red{background:linear-gradient(135deg,#fee2e2,#fecaca)}
+body.team-blue{background:linear-gradient(135deg,#dbeafe,#bfdbfe)}
+header{text-align:center;padding:22px 12px 12px}
+h1{margin:0 0 8px;font-size:clamp(1.7rem,4vw,2.5rem)}
+header p{margin:0;color:#475569}
+.wrap{max-width:1250px;margin:auto;padding:12px 16px 30px}
+.hidden{display:none!important}
+.setup,.scoreboard,.game-panel{background:#ffffffed;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 8px 24px #0f172a12}
+.setup{max-width:760px;margin:8vh auto 18px;padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end}
+.setup-title{grid-column:1/-1;text-align:center}
+.setup-title h2{margin:0 0 7px}
+.setup-title p{margin:0;color:#64748b}
+.setup .primary{grid-column:1/-1;justify-self:center;min-width:220px}
+label{display:block;font-weight:bold;margin-bottom:6px;font-size:.9rem}
+input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font:inherit}
+button{font:inherit;font-weight:bold;padding:11px 16px;border:0;border-radius:11px;cursor:pointer;transition:transform .12s,opacity .12s}
+button:hover{transform:translateY(-1px)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.primary{background:#172033;color:white}
+.secondary{background:#e2e8f0;color:#172033}
+.mix-button{background:linear-gradient(135deg,#facc15,#f59e0b);color:#422006;border:2px solid #ca8a04}
+.scoreboard{margin:14px 0;padding:13px;display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+.team{border-radius:13px;padding:12px;color:white;text-align:center;opacity:.72;border:3px solid transparent}
+.team.active{opacity:1;border-color:white;box-shadow:0 0 0 3px #17203335}
+.red{background:#b91c1c}
+.blue{background:#1d4ed8}
+.team-name{font-weight:bold;overflow-wrap:anywhere}
+.points{font-size:2rem;font-weight:900}
+.versus{font-size:.8rem;color:#64748b;font-weight:bold}
+.status{text-align:center;padding:12px;background:white;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:14px;font-weight:bold}
+.status small{display:block;margin-top:5px;color:#64748b;font-weight:normal}
+.game-panel{padding:16px}
+.mix-banner{display:none;text-align:center;padding:13px;margin-bottom:14px;border-radius:12px;background:linear-gradient(90deg,#fef3c7,#fde68a,#fef3c7);border:2px solid #eab308;color:#713f12;font-weight:900}
+body.mix-ready .mix-banner{display:block;animation:pulse 1s infinite alternate}
+body.mix-ready .game-panel{box-shadow:0 0 0 3px #facc15,0 0 25px #facc1570}
+@keyframes pulse{to{box-shadow:0 0 22px #eab308b8}}
+.columns{display:grid;grid-template-columns:1fr 1fr}
+.column{min-width:0;padding:0 14px}
+.column+.column{border-left:3px solid #cbd5e1}
+.column h2{text-align:center;font-size:1.1rem;margin:4px 0 12px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.card{position:relative;min-height:105px;padding:10px;display:flex;justify-content:center;align-items:center;text-align:center;overflow-wrap:anywhere;color:white;background:linear-gradient(145deg,#334155,#0f172a);border:2px solid #64748b;border-radius:13px;font-weight:bold}
+.card .front{font-size:1.6rem}
+.card.revealed{color:#172033;background:white;border-color:#94a3b8}
+.card.matched{background:#dcfce7;border-color:#16a34a;color:#166534}
+.card.matched.team-red{background:#fecaca;border-color:#b91c1c;color:#7f1d1d}
+.card.matched.team-blue{background:#bfdbfe;border-color:#1d4ed8;color:#1e3a8a}
+.card.matched .front{display:none}
+.card.matched .content{display:block!important}
+.card:disabled{opacity:1;cursor:default}
+.card.shuffling{animation:shuffle .4s ease-in-out infinite alternate}
+@keyframes shuffle{from{transform:translate(-3px,-2px) rotate(-2deg)}to{transform:translate(3px,2px) rotate(2deg)}}
+.shuffle-hint{text-align:center;min-height:1.4em;color:#475569;font-weight:bold}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.rules{color:#475569;font-size:.9rem;line-height:1.5}
+.countdown{text-align:center;font-size:5rem;font-weight:1000;color:#1d4ed8}
+.event-overlay{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:16px;background:#0f172a88;overflow:auto}
+.event-overlay.visible{display:flex}
+.event-box{width:min(780px,100%);max-height:95vh;overflow:auto;border-radius:24px;padding:clamp(20px,4vw,38px);text-align:center;box-shadow:0 25px 90px #02061788;animation:pop .3s ease-out;background:linear-gradient(135deg,#92400e,#f59e0b,#facc15);border:4px solid #fef3c7;color:#422006}
+.event-box.end{background:linear-gradient(145deg,#172554,#1e40af,#7c3aed);color:white;border-color:#dbeafe}
+.event-box h2{font-size:clamp(2rem,6vw,3.8rem);margin:4px 0 12px;line-height:1.05}
+.event-box p{font-size:clamp(1rem,2.7vw,1.25rem);font-weight:bold}
+.event-buttons{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:24px}
+.event-buttons button{padding:13px 18px}
+.end-winner{font-size:clamp(1.5rem,4vw,2.4rem);font-weight:1000;margin:10px 0}
+.celebration{display:flex;justify-content:center;align-items:flex-end;gap:clamp(8px,3vw,28px);margin:22px auto 12px}
+.person{width:clamp(65px,14vw,105px);height:clamp(100px,21vw,145px);position:relative;animation:jump .65s ease-in-out infinite alternate}
+.person:nth-child(2){animation-delay:.2s}
+.person:nth-child(3){animation-delay:.4s}
+.head{width:34%;aspect-ratio:1;border-radius:50%;background:#ffd7aa;border:3px solid #713f12;margin:0 auto;position:relative;z-index:2}
+.body-person{height:45%;width:72%;margin:-2px auto 0;border:3px solid #fff;border-radius:18px 18px 9px 9px}
+.person.red-person .body-person{background:#ef4444}
+.person.blue-person .body-person{background:#3b82f6}
+.arms{position:absolute;top:30%;left:0;right:0;height:12px;border-radius:8px;background:#ffd7aa;border:2px solid #713f12;transform:rotate(-25deg)}
+.legs{display:flex;justify-content:center;gap:12px;height:32%}
+.legs span{width:20%;height:100%;border-radius:7px;background:#1e293b;border:2px solid white}
+.trophy{font-size:clamp(3rem,8vw,5.5rem);animation:trophyGlow .8s infinite alternate}
+@keyframes jump{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-18px) rotate(3deg)}}
+@keyframes trophyGlow{to{transform:scale(1.13);filter:drop-shadow(0 0 12px #fde047)}}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+footer{text-align:center;padding:18px;color:#64748b;font-size:.8rem}
+@media(min-width:850px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.card{min-height:118px}}
+@media(max-width:600px){.setup{grid-template-columns:1fr;margin:5vh auto 18px;padding:18px}.setup-title,.setup .primary{grid-column:1}.setup .primary{width:100%}.column{padding:0 6px}.column+.column{border-left-width:2px}.game-panel{padding:9px}.card{min-height:112px;padding:7px 4px;font-size:.84rem}.scoreboard{gap:7px;padding:8px}.team{padding:8px 4px}.points{font-size:1.6rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div class="event-overlay" id="eventOverlay" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+ <div class="event-box" id="eventBox">
+  <h2 id="eventTitle"></h2>
+  <div id="eventContent"></div>
+  <div class="event-buttons" id="eventButtons"></div>
+ </div>
+</div>
+
+<header>
+ <h1>🧪 Memoria química</h1>
+ <p>Encuentra las parejas sobre las reacciones químicas.</p>
+</header>
+
+<main class="wrap">
+ <section class="setup" id="setup">
+  <div class="setup-title">
+   <h2>Prepara la partida</h2>
+   <p>Escriban los nombres de los equipos y prepárense para jugar.</p>
+  </div>
+  <div><label for="nameRed">Nombre del equipo rojo</label><input id="nameRed" maxlength="28" value="Equipo Rojo"></div>
+  <div><label for="nameBlue">Nombre del equipo azul</label><input id="nameBlue" maxlength="28" value="Equipo Azul"></div>
+  <button class="primary" id="startBtn">▶ Iniciar partida</button>
+ </section>
+
+ <section class="scoreboard hidden" id="scoreboard">
+  <div class="team red" id="redTeam"><div class="team-name" id="redLabel">Equipo Rojo</div><div class="points" id="redScore">0</div> parejas</div>
+  <div class="versus">MARCADOR</div>
+  <div class="team blue" id="blueTeam"><div class="team-name" id="blueLabel">Equipo Azul</div><div class="points" id="blueScore">0</div> parejas</div>
+ </section>
+
+ <div class="status hidden" id="status" aria-live="polite"></div>
+
+ <section class="game-area hidden" id="gameArea">
+  <div class="game-panel">
+   <div class="mix-banner" id="mixBanner">✨ 🔀 ¡MEZCLA DISPONIBLE! Actívala antes de tu siguiente intento para revolver las cartas y darle al rival un intento especial.</div>
+   <p class="shuffle-hint" id="shuffleHint"></p>
+   <div class="columns">
+    <div class="column"><h2>❓ Preguntas</h2><div class="cards" id="questions"></div></div>
+    <div class="column"><h2>💡 Respuestas</h2><div class="cards" id="answers"></div></div>
+   </div>
+   <div class="actions">
+    <button class="mix-button" id="mixBtn" disabled>🔀 MEZCLA</button>
+    <button class="secondary" id="showRulesBtn">¿Cómo se juega?</button>
+    <button class="primary hidden" id="finishReviewBtn">🏁 Finalizar partida</button>
+   </div>
+   <p class="rules" id="rules">Encuentra una pregunta y su respuesta. Si aciertas, sumas un punto y sigues jugando. Si fallas, pasa el turno. Después de dos aciertos seguidos puedes activar MEZCLA antes de tu siguiente intento. El rival tendrá un intento especial que vale 2 puntos si acierta.</p>
+  </div>
+ </section>
+</main>
+<footer>Recurso pedagógico para grado sexto · Ciencias Naturales</footer>
+
+<script>
+const pairs=[
+["¿Qué es una reacción química?","Un proceso que transforma unas sustancias en otras."],
+["¿Cómo se llaman las sustancias del inicio?","Reactivos."],
+["¿Cómo se llaman las sustancias que se forman?","Productos."],
+["¿Qué indica una flecha en una ecuación química?","Que los reactivos se transforman en productos."],
+["¿Qué gas necesita una combustión común?","Oxígeno."],
+["¿Qué ocurre al quemar madera?","Se forman nuevas sustancias, como gases y ceniza."],
+["¿El hielo que se derrite es una reacción química?","No, es un cambio físico."],
+["¿Cocinar un huevo produce cambios químicos?","Sí, se producen cambios que no se revierten fácilmente."],
+["¿Qué puede indicar que ocurrió una reacción?","Cambio de color, gas, precipitado o temperatura."],
+["¿Qué es un gas en una reacción?","Una sustancia que puede salir en forma de burbujas."],
+["¿Qué es un precipitado?","Un sólido que aparece dentro de un líquido."],
+["¿La oxidación del hierro es un cambio químico?","Sí, forma óxido de hierro."],
+["¿Qué necesita una planta para hacer fotosíntesis?","Luz, agua y dióxido de carbono."],
+["¿Qué gas absorben las plantas en la fotosíntesis?","Dióxido de carbono."],
+["¿Qué gas liberan las plantas durante la fotosíntesis?","Oxígeno."],
+["¿Una tableta efervescente en agua puede producir gas?","Sí, produce burbujas de dióxido de carbono."],
+["¿Qué es una ecuación química?","Una forma de representar una reacción con símbolos y fórmulas."],
+["¿Por qué se balancea una ecuación química?","Para tener la misma cantidad de cada tipo de átomo a ambos lados."],
+["¿La digestión de los alimentos incluye reacciones químicas?","Sí, transforma los alimentos en sustancias más simples."],
+["¿Una reacción química crea o transforma sustancias?","Transforma sustancias en otras nuevas."]
+];
+
+const $=id=>document.getElementById(id);
+const setup=$('setup'),gameArea=$('gameArea'),scoreboard=$('scoreboard');
+const qBox=$('questions'),aBox=$('answers'),statusBox=$('status');
+const startBtn=$('startBtn'),mixBtn=$('mixBtn'),finishReviewBtn=$('finishReviewBtn');
+const redTeam=$('redTeam'),blueTeam=$('blueTeam');
+const eventOverlay=$('eventOverlay'),eventBox=$('eventBox');
+const eventTitle=$('eventTitle'),eventContent=$('eventContent'),eventButtons=$('eventButtons');
+
+let active='red',started=false,locked=false,shufflingNow=false,reviewMode=false;
+let first=null,second=null,scores={red:0,blue:0},streak={red:0,blue:0};
+let matched=new Set(),mixAvailableFor=null,boostedTurnFor=null;
+let cardElements={q:[],a:[]},mixOriginalOrder=null,bannerTimer=null,bannerToken=0,countdownToken=0;
+
+function teamName(team){
+ return $('name'+(team==='red'?'Red':'Blue')).value.trim()||(team==='red'?'Equipo Rojo':'Equipo Azul');
+}
+function shuffle(arr){
+ const a=[...arr];
+ for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+ return a;
+}
+function setStatus(message,detail=''){
+ statusBox.classList.remove('hidden');statusBox.replaceChildren();
+ statusBox.append(document.createTextNode(message));
+ if(detail){const s=document.createElement('small');s.textContent=detail;statusBox.append(s)}
+}
+function updateTeams(){
+ $('redLabel').textContent=teamName('red');$('blueLabel').textContent=teamName('blue');
+ $('redScore').textContent=scores.red;$('blueScore').textContent=scores.blue;
+ redTeam.classList.toggle('active',started&&active==='red');
+ blueTeam.classList.toggle('active',started&&active==='blue');
+ document.body.classList.toggle('team-red',started&&active==='red');
+ document.body.classList.toggle('team-blue',started&&active==='blue');
+ const canMix=started&&!reviewMode&&mixAvailableFor===active&&!locked&&!shufflingNow;
+ mixBtn.disabled=!canMix;mixBtn.classList.toggle('available',canMix);
+ document.body.classList.toggle('mix-ready',canMix);
+}
+function reveal(card){
+ card.classList.add('revealed','selected');
+ card.querySelector('.front').classList.add('hidden');
+ const c=card.querySelector('.content');c.textContent=card.dataset.text;c.classList.remove('hidden');
+ card.setAttribute('aria-label',card.dataset.text);
+}
+function conceal(card){
+ if(card.classList.contains('matched'))return;
+ card.classList.remove('revealed','selected');
+ card.querySelector('.front').classList.remove('hidden');
+ card.querySelector('.content').classList.add('hidden');
+ card.setAttribute('aria-label',card.dataset.kind==='q'?'Carta de pregunta oculta':'Carta de respuesta oculta');
+}
+function normalizeAnswer(text){
+ return text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+}
+function makeCard(kind,item){
+ const b=document.createElement('button');b.type='button';b.className='card';
+ b.dataset.kind=kind;b.dataset.pair=item.id;b.dataset.text=item.text;
+ // Las preguntas guardan su respuesta esperada; respuestas iguales comparten la clave.
+ const answerText=kind==='q'?pairs[item.id][1]:item.text;
+ b.dataset.answerKey=normalizeAnswer(answerText);
+ b.innerHTML='<span class="front">?</span><span class="content hidden"></span>';
+ b.setAttribute('aria-label',kind==='q'?'Carta de pregunta oculta':'Carta de respuesta oculta');
+ b.addEventListener('click',()=>chooseCard(b));return b;
+}
+function renderCards(){
+ qBox.replaceChildren();aBox.replaceChildren();cardElements={q:[],a:[]};matched=new Set();
+ shuffle(pairs.map((p,id)=>({id,text:p[0]}))).forEach(item=>{
+  const c=makeCard('q',item);qBox.append(c);cardElements.q.push(c);
+ });
+ shuffle(pairs.map((p,id)=>({id,text:p[1]}))).forEach(item=>{
+  const c=makeCard('a',item);aBox.append(c);cardElements.a.push(c);
+ });
+}
+function showSimpleBanner(title,detail,duration=2000){
+ const token=++bannerToken;if(bannerTimer)clearTimeout(bannerTimer);
+ eventBox.className='event-box';eventContent.replaceChildren();eventButtons.replaceChildren();
+ eventTitle.textContent=title;
+ const p=document.createElement('p');p.textContent=detail;eventContent.append(p);
+ eventOverlay.classList.add('visible');
+ bannerTimer=setTimeout(()=>{if(token===bannerToken)eventOverlay.classList.remove('visible')},duration);
+}
+function hideBanner(){
+ ++bannerToken;if(bannerTimer)clearTimeout(bannerTimer);
+ eventOverlay.classList.remove('visible');
+}
+function showMixBanner(team){
+ const token=++bannerToken;if(bannerTimer)clearTimeout(bannerTimer);
+ eventBox.className='event-box';eventContent.replaceChildren();eventButtons.replaceChildren();
+ eventTitle.textContent='🔀 ¡MEZCLA ACTIVADA!';
+ const p=document.createElement('p');
+ p.textContent=teamName(team)+' mezcla las cartas. '+teamName(active)+' tiene un intento especial que vale 2 puntos si acierta.';
+ eventContent.append(p);eventOverlay.classList.add('visible');
+ bannerTimer=setTimeout(()=>{if(token===bannerToken)eventOverlay.classList.remove('visible')},2100);
+}
+function restoreMixPositions(){
+ if(!mixOriginalOrder)return;
+ for(const kind of ['q','a']){
+  const box=kind==='q'?qBox:aBox,original=mixOriginalOrder[kind];
+  const current=[...box.children],target=new Array(original.length),used=new Set();
+  current.forEach((card,index)=>{
+   if(card.classList.contains('matched')){target[index]=card;used.add(card)}
+  });
+  original.forEach((card,index)=>{
+   if(!used.has(card)&&!card.classList.contains('matched')&&!target[index]){
+    target[index]=card;used.add(card);
+   }
+  });
+  original.forEach(card=>{
+   if(!used.has(card)&&!card.classList.contains('matched')){
+    const i=target.indexOf(undefined);if(i!==-1){target[i]=card;used.add(card)}
+   }
+  });
+  target.filter(Boolean).forEach(card=>box.appendChild(card));
+ }
+ mixOriginalOrder=null;
+}
+function animateInitialShuffle(done){
+ shufflingNow=true;locked=true;updateTeams();
+ $('shuffleHint').textContent='🔀 ¡Mezclando todas las cartas!';
+ const all=[...cardElements.q,...cardElements.a];
+ all.forEach((c,i)=>{c.classList.add('shuffling');c.style.animationDelay=(i%7)*30+'ms'});
+ setTimeout(()=>{
+  all.forEach(c=>{c.classList.remove('shuffling');c.style.animationDelay=''});
+  $('shuffleHint').textContent='Elige una pregunta y después una respuesta.';
+  shufflingNow=false;locked=false;done();updateTeams();
+ },1100);
+}
+function animateMix(done){
+ shufflingNow=true;locked=true;updateTeams();
+ $('shuffleHint').textContent='🔀 ¡Mezclando las cartas restantes!';
+ const originals={q:[...qBox.children],a:[...aBox.children]};mixOriginalOrder=originals;
+ for(const kind of ['q','a']){
+  const box=kind==='q'?qBox:aBox,original=originals[kind];
+  const slots=[],remaining=[];
+  original.forEach((c,i)=>{if(!c.classList.contains('matched')){slots.push(i);remaining.push(c)}});
+  const shuffled=shuffle(remaining),target=[...original];
+  slots.forEach((slot,i)=>target[slot]=shuffled[i]);
+  target.forEach((c,i)=>{if(c&&!c.classList.contains('matched')){c.classList.add('shuffling');c.style.animationDelay=(i%7)*30+'ms'}});
+  target.forEach(c=>box.appendChild(c));
+ }
+ setTimeout(()=>{
+  [...cardElements.q,...cardElements.a].forEach(c=>{c.classList.remove('shuffling');c.style.animationDelay=''});
+  $('shuffleHint').textContent='La mezcla es temporal: las cartas volverán a su posición después del intento especial.';
+  shufflingNow=false;locked=false;done();updateTeams();
+ },1100);
+}
+function passTurn(){
+ active=active==='red'?'blue':'red';updateTeams();
+ setStatus('Turno de '+teamName(active)+'.','Elijan una pregunta y luego una respuesta.');
+}
+function chooseCard(card){
+ if(!started||locked||shufflingNow||reviewMode||card.classList.contains('matched')||card.classList.contains('revealed'))return;
+ if(!first&&mixAvailableFor===active){
+  mixAvailableFor=null;streak[active]=0;updateTeams();
+ }
+ if(!first&&card.dataset.kind!=='q'){
+  setStatus('Elige primero una pregunta.','Después selecciona una respuesta.');return;
+ }
+ if(first&&card.dataset.kind!=='a'){
+  setStatus('Ahora elige una respuesta.','Cada intento tiene una pregunta y una respuesta.');return;
+ }
+ reveal(card);
+ if(!first){
+  first=card;setStatus(teamName(active)+': pregunta revelada.','Ahora selecciona una carta de respuestas.');
+  updateTeams();return;
+ }
+ second=card;locked=true;updateTeams();
+ const correct=first.dataset.answerKey===second.dataset.answerKey;
+ const wasBoosted=boostedTurnFor===active;
+ if(correct){
+  const q=first,a=second;
+  q.classList.remove('selected');a.classList.remove('selected');
+  q.classList.add('matched');a.classList.add('matched');
+  q.disabled=true;a.disabled=true;
+  matched.add(Number(q.dataset.pair));
+  scores[active]+=wasBoosted?2:1;streak[active]++;
+  const scoringTeam=active;
+  setTimeout(()=>{
+   q.classList.add('team-'+scoringTeam);a.classList.add('team-'+scoringTeam);
+  },450);
+  first=second=null;locked=false;
+  if(wasBoosted){boostedTurnFor=null;restoreMixPositions()}
+  if(streak[active]>=2&&!wasBoosted)mixAvailableFor=active;
+  updateTeams();
+  if(matched.size===pairs.length){finishGame();return}
+  if(wasBoosted){
+   setStatus('¡Correcto! '+teamName(active)+' gana 2 puntos.','El intento especial terminó y las cartas regresan a sus posiciones anteriores.');
+  }else if(mixAvailableFor===active){
+   setStatus('¡Pareja correcta! '+teamName(active)+' suma 1 punto.','¡MEZCLA disponible! Puedes activarla ahora o elegir una carta normal para perder la oportunidad.');
+  }else{
+   setStatus('¡Correcto! '+teamName(active)+' suma 1 punto.','Como acertó, puede seguir jugando.');
+  }
+ }else{
+  const q=first,a=second,previous=active;
+  streak[active]=0;
+  if(wasBoosted)boostedTurnFor=null;
+  mixAvailableFor=null;updateTeams();
+  setStatus('Esta pareja no coincide.','Las cartas se ocultarán en 2,3 segundos y pasará el turno.');
+  setTimeout(()=>{
+   conceal(q);conceal(a);first=second=null;
+   if(wasBoosted)restoreMixPositions();
+   locked=false;active=previous==='red'?'blue':'red';updateTeams();
+   setStatus('Turno de '+teamName(active)+'.','Elijan una pregunta y luego una respuesta.');
+  },2300);
+ }
+}
+function activateMix(){
+ if(!started||locked||shufflingNow||mixAvailableFor!==active)return;
+ const mixingTeam=active;
+ mixAvailableFor=null;streak[mixingTeam]=0;
+ boostedTurnFor=mixingTeam==='red'?'blue':'red';active=boostedTurnFor;
+ showMixBanner(mixingTeam);updateTeams();
+ setStatus('¡MEZCLA activada por '+teamName(mixingTeam)+'!','El equipo rival tiene un intento especial: si acierta, gana 2 puntos.');
+ animateMix(()=>{
+  setStatus('¡Intento especial de '+teamName(active)+'!','Solo tiene un intento. Después, las cartas restantes vuelven a sus posiciones anteriores.');
+ });
+}
+function makeButton(label,cls,fn){
+ const b=document.createElement('button');b.textContent=label;b.className=cls;b.addEventListener('click',fn);return b;
+}
+function finishGame(){
+ started=false;locked=true;reviewMode=false;
+ document.body.classList.remove('mix-ready');
+ mixAvailableFor=null;boostedTurnFor=null;
+ updateTeams();
+ const red=scores.red,blue=scores.blue;
+ const draw=red===blue,winner=draw?null:(red>blue?'red':'blue');
+ eventBox.className='event-box end';
+ eventTitle.textContent='🏁 ¡JUEGO TERMINADO!';
+ eventContent.replaceChildren();eventButtons.replaceChildren();
+ const message=document.createElement('div');message.className='end-winner';
+ message.textContent=draw?'¡EMPATE!': '¡'+teamName(winner)+' ES EL GANADOR!';
+ eventContent.append(message);
+ const score=document.createElement('p');
+ score.textContent=teamName('red')+': '+red+' puntos  ·  '+teamName('blue')+': '+blue+' puntos';
+ eventContent.append(score);
+ const celebration=document.createElement('div');celebration.className='celebration';
+ const colors=draw?['red','blue','red']:[winner,winner,winner];
+ colors.forEach((color,i)=>{
+  const person=document.createElement('div');person.className='person '+(color==='red'?'red-person':'blue-person');
+  person.innerHTML='<div class="head"></div><div class="arms"></div><div class="body-person"></div><div class="legs"><span></span><span></span></div>';
+  celebration.append(person);
+  if(i===1){const trophy=document.createElement('div');trophy.className='trophy';trophy.textContent='🏆';celebration.append(trophy)}
+ });
+ eventContent.append(celebration);
+ const caption=document.createElement('p');
+ caption.textContent=draw?'¡Los dos equipos han terminado con la misma puntuación!':'¡Felicidades, '+teamName(winner)+'! ¡Gran trabajo en equipo!';
+ eventContent.append(caption);
+ eventButtons.append(
+  makeButton('👀 Revisar respuestas','secondary',reviewAnswers),
+  makeButton('🏁 Finalizar partida','primary',returnToSetup)
+ );
+ eventOverlay.classList.add('visible');
+ setup.classList.add('hidden');gameArea.classList.remove('hidden');scoreboard.classList.remove('hidden');
+ finishReviewBtn.classList.add('hidden');
+ setStatus('Partida terminada.','Puedes revisar las respuestas o finalizar para preparar otra partida.');
+}
+function reviewAnswers(){
+ hideBanner();reviewMode=true;started=false;locked=false;
+ for(const card of [...cardElements.q,...cardElements.a]){
+  if(!card.classList.contains('matched'))reveal(card);
+  else{
+   card.querySelector('.front').classList.add('hidden');
+   const content=card.querySelector('.content');content.textContent=card.dataset.text;content.classList.remove('hidden');
+  }
+  card.disabled=true;
+ }
+ restoreMixPositions();
+ finishReviewBtn.classList.remove('hidden');
+ mixBtn.classList.add('hidden');
+ setStatus('Revisión de respuestas.','Todas las preguntas y respuestas están visibles. Las parejas conservan el color del equipo que las encontró.');
+}
+function returnToSetup(){
+ hideBanner();countdownToken++;
+ started=false;locked=false;shufflingNow=false;reviewMode=false;
+ setup.classList.remove('hidden');gameArea.classList.add('hidden');scoreboard.classList.add('hidden');
+ statusBox.classList.add('hidden');finishReviewBtn.classList.add('hidden');
+ mixBtn.classList.remove('hidden');mixBtn.disabled=true;
+ startBtn.disabled=false;startBtn.textContent='▶ Iniciar partida';
+ $('nameRed').disabled=false;$('nameBlue').disabled=false;
+ document.body.classList.remove('team-red','team-blue','mix-ready');
+ redTeam.classList.remove('active');blueTeam.classList.remove('active');
+ first=second=null;mixOriginalOrder=null;updateTeams();
+}
+function startGame(){
+ if(started)return;
+ hideBanner();countdownToken++;
+ setup.classList.add('hidden');gameArea.classList.remove('hidden');scoreboard.classList.remove('hidden');
+ statusBox.classList.remove('hidden');finishReviewBtn.classList.add('hidden');mixBtn.classList.remove('hidden');
+ $('nameRed').disabled=true;$('nameBlue').disabled=true;startBtn.disabled=true;
+ started=true;locked=true;reviewMode=false;scores={red:0,blue:0};streak={red:0,blue:0};
+ matched=new Set();mixAvailableFor=null;boostedTurnFor=null;mixOriginalOrder=null;first=second=null;
+ active=Math.random()<.5?'red':'blue';renderCards();updateTeams();
+ let count=3;const token=countdownToken;
+ $('shuffleHint').innerHTML='<div class="countdown" id="countdownNumber">3</div>';
+ setStatus('La partida comienza en...','¡Prepárense!');
+ function tick(){
+  if(token!==countdownToken)return;
+  const n=$('countdownNumber');if(n)n.textContent=count;
+  if(count>1){count--;setTimeout(tick,1000)}
+  else setTimeout(()=>{
+   if(token!==countdownToken)return;
+   animateInitialShuffle(()=>{
+    locked=false;shufflingNow=false;
+    setStatus('¡Comienza '+teamName(active)+'!','El fondo indica el equipo que tiene el turno.');
+    updateTeams();
+   });
+  },650);
+ }
+ tick();
+}
+startBtn.addEventListener('click',startGame);
+mixBtn.addEventListener('click',activateMix);
+finishReviewBtn.addEventListener('click',returnToSetup);
+$('showRulesBtn').addEventListener('click',()=>$('rules').classList.toggle('hidden'));
+$('nameRed').addEventListener('input',updateTeams);
+$('nameBlue').addEventListener('input',updateTeams);
+renderCards();
+</script>
+</body>
+</html>
